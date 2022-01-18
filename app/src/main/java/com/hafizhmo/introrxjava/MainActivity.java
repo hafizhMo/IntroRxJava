@@ -10,6 +10,7 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
@@ -37,7 +38,13 @@ public class MainActivity extends AppCompatActivity {
         animalsObservable
                 .observeOn(Schedulers.io()) // This tells the Observer to receive the data on android UI thread so that you can take any UI related actions.
                 .subscribeOn(AndroidSchedulers.mainThread()) // This tell the Observable to run the task on a background thread.
-                .subscribe(animalsObserver);
+                .filter(new Predicate<String>() { // operator filters the data by applying a conditional statement. The data which meets the condition will be emitted and the remaining will be ignored.
+                    @Override
+                    public boolean test(@NonNull String s) throws Exception {
+                        return s.toLowerCase().startsWith("y");
+                    }
+                })
+                .subscribeWith(animalsObserver);
 
     }
 
@@ -72,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Observable<String> getAnimalsObservable() {
-        return Observable.just("Yiren", "Aisha", "SiHyeon", "Onda", "Mia", "E:U");
+        return Observable.fromArray("Yiren", "Aisha", "SiHyeon", "Onda", "Mia", "E:U");
     }
 
     @Override
