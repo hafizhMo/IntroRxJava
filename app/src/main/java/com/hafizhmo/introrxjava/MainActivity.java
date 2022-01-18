@@ -5,12 +5,11 @@ import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import io.reactivex.Completable;
-import io.reactivex.CompletableEmitter;
-import io.reactivex.CompletableObserver;
-import io.reactivex.CompletableOnSubscribe;
+import io.reactivex.Flowable;
+import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
@@ -23,36 +22,25 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Note note = new Note(1, "Home work!");
+        Flowable<Integer> flowableObservable = getFlowableObservable();
 
-        Completable completableObservable = updateNote(note);
+        SingleObserver<Integer> observer = getFlowableObserver();
 
-        CompletableObserver completableObserver = completableObserver();
-
-        completableObservable
+        flowableObservable
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(completableObserver);
+                .reduce(0, new BiFunction<Integer, Integer, Integer>() {
+                    @Override
+                    public Integer apply(Integer result, Integer number) {
+//                        Log.e(TAG, "Result: " + result + ", new number: " + number);
+                        return result + number;
+                    }
+                })
+                .subscribe(observer);
     }
 
-
-    /**
-     * Assume this making PUT request to server to update the Note
-     */
-    private Completable updateNote(Note note) {
-        return Completable.create(new CompletableOnSubscribe() {
-            @Override
-            public void subscribe(CompletableEmitter emitter) throws Exception {
-                if (!emitter.isDisposed()) {
-                    Thread.sleep(1000);
-                    emitter.onComplete();
-                }
-            }
-        });
-    }
-
-    private CompletableObserver completableObserver() {
-        return new CompletableObserver() {
+    private SingleObserver<Integer> getFlowableObserver() {
+        return new SingleObserver<Integer>() {
             @Override
             public void onSubscribe(Disposable d) {
                 Log.d(TAG, "onSubscribe");
@@ -60,8 +48,8 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onComplete() {
-                Log.d(TAG, "onComplete: Note updated successfully!");
+            public void onSuccess(Integer integer) {
+                Log.d(TAG, "onSuccess: " + integer);
             }
 
             @Override
@@ -69,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "onError: " + e.getMessage());
             }
         };
+    }
+
+    private Flowable<Integer> getFlowableObservable() {
+        return Flowable.range(1, 100);
     }
 
     @Override
