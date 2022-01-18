@@ -1,17 +1,14 @@
 package com.hafizhmo.introrxjava;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.List;
+import androidx.appcompat.app.AppCompatActivity;
 
-import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.Observer;
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleObserver;
+import io.reactivex.SingleOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -26,18 +23,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Observable<Note> notesObservable = getNotesObservable();
+        Single<Note> noteObservable = getNoteObservable();
 
-        Observer<Note> notesObserver = getNotesObserver();
+        SingleObserver<Note> singleObserver = getSingleObserver();
 
-        notesObservable.observeOn(Schedulers.io())
+        noteObservable
+                .observeOn(Schedulers.io())
                 .subscribeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(notesObserver);
+                .subscribe(singleObserver);
+
     }
 
-    private Observer<Note> getNotesObserver() {
-        return new Observer<Note>() {
-
+    private SingleObserver<Note> getSingleObserver() {
+        return new SingleObserver<Note>() {
             @Override
             public void onSubscribe(Disposable d) {
                 Log.d(TAG, "onSubscribe");
@@ -45,49 +43,25 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onNext(Note note) {
-                Log.d(TAG, "onNext: " + note.getNote());
+            public void onSuccess(Note note) {
+                Log.e(TAG, "onSuccess: " + note.getNote());
             }
 
             @Override
             public void onError(Throwable e) {
-                Log.e(TAG, "onError: " + e.getMessage());
-            }
-
-            @Override
-            public void onComplete() {
-                Log.d(TAG, "onComplete");
+                Log.d(TAG, "onError: " + e.getMessage());
             }
         };
     }
 
-    private Observable<Note> getNotesObservable() {
-        final List<Note> notes = prepareNotes();
-
-        return Observable.create(new ObservableOnSubscribe<Note>() {
+    private Single<Note> getNoteObservable() {
+        return Single.create(new SingleOnSubscribe<Note>() {
             @Override
-            public void subscribe(ObservableEmitter<Note> emitter) throws Exception {
-                for (Note note : notes) {
-                    if (!emitter.isDisposed()) {
-                        emitter.onNext(note);
-                    }
-                }
-
-                // all notes are emitted
-                if (!emitter.isDisposed()) {
-                    emitter.onComplete();
-                }
+            public void subscribe(SingleEmitter<Note> emitter) throws Exception {
+                Note note = new Note(1, "Buy milk!");
+                emitter.onSuccess(note);
             }
         });
-    }
-
-    private List<Note> prepareNotes() {
-        List<Note> notes = new ArrayList<>();
-        notes.add(new Note(1, "Buy tooth paste!"));
-        notes.add(new Note(2, "Call brother!"));
-        notes.add(new Note(3, "Watch Narcos tonight!"));
-        notes.add(new Note(4, "Pay power bill!"));
-        return notes;
     }
 
     @Override
